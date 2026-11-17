@@ -1,19 +1,48 @@
-<!doctype html>
-<html>
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<title>My static Space</title>
-		<link rel="stylesheet" href="style.css" />
-	</head>
-	<body>
-		<div class="card">
-			<h1>Welcome to your static Space!</h1>
-			<p>You can modify this app directly by editing <i>index.html</i> in the Files and versions tab.</p>
-			<p>
-				Also don't forget to check the
-				<a href="https://huggingface.co/docs/hub/spaces" target="_blank">Spaces documentation</a>.
-			</p>
-		</div>
-	</body>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>المهلهل | Al-Muhalhil</title>
+<style>
+body{font-family:system-ui;background:#0f172a;color:#fff;margin:0;padding:10px}
+h1{text-align:center;color:#fbbf24}
+#chat{height:65vh;overflow:auto;background:#1e293b;border-radius:15px;padding:12px;margin-bottom:10px}
+.msg{padding:10px;border-radius:12px;margin:8px 0;max-width:85%}
+.user{background:#2563eb;margin-right:auto;text-align:left}
+.bot{background:#334155}
+input{width:75%;padding:12px;border-radius:20px;border:none}
+button{width:20%;padding:12px;border-radius:20px;border:none;background:#fbbf24;font-weight:bold}
+</style>
+</head>
+<body>
+<h1>⚔️ المهلهل</h1>
+<p style="text-align:center">هلا بك! اسألني أي شي باليمني</p>
+<div id="chat"><div class="msg bot">هلاااا! أنا المهلهل، كيف أخدمك اليوم؟</div></div>
+<div style="display:flex;gap:5px">
+<input id="inp" placeholder="اكتب هنا...">
+<button onclick="send()">أرسل</button>
+</div>
+<script>
+async function send(){
+let inp=document.getElementById('inp');
+let txt=inp.value.trim(); if(!txt) return;
+let chat=document.getElementById('chat');
+chat.innerHTML+=`<div class="msg user">${txt}</div>`;
+inp.value='';
+chat.innerHTML+=`<div class="msg bot" id="loading">المهلهل يكتب...</div>`;
+chat.scrollTop=chat.scrollHeight;
+try{
+let prompt=`انت المهلهل، شاعر يمني حكيم، ترد باللهجة اليمنية الصنعانية باحترام ومرح. سؤال المستخدم: ${txt}`;
+let res=await fetch('https://text.pollinations.ai/'+encodeURIComponent(prompt));
+let data=await res.text();
+document.getElementById('loading').remove();
+chat.innerHTML+=`<div class="msg bot">${data}</div>`;
+}catch(e){
+document.getElementById('loading').innerText='حصلت مشكلة، حاول مرة ثانية';
+}
+chat.scrollTop=chat.scrollHeight;
+}
+</script>
+</body>
 </html>
