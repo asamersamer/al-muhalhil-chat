@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -140,6 +141,141 @@ async function send(){
     let data=await res.text();
     // نظف الرد قبل ما نعرضه
     data = fixForSpeech(data);
+    let el=document.getElementById('loading'); if(el) el.remove();
+    let id='msg'+Date.now();
+    chat.innerHTML+='<div class="msg bot" id="'+id+'">'+data+'<br><button class="speakBtn">اسمع صوتي</button></div>';
+    document.getElementById(id).querySelector('.speakBtn').addEventListener('click', ()=>speakText(data));
+    speakText(data);
+  }catch(e){ let el=document.getElementById('loading'); if(el) el.innerText='مشكلة بالنت'; }
+  chat.scrollTop=chat.scrollHeight;
+}
+window.speechSynthesis.getVoices();
+</script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>المهلهل - سوري ويمني</title>
+<style>
+body{font-family:system-ui;background:#0f172a;color:#fff;margin:0;padding:10px}
+.header{text-align:center}
+.logo{width:90px;height:90px;border-radius:50%;background:linear-gradient(45deg,#fbbf24,#dc2626);display:flex;align-items:center;justify-content:center;font-size:55px;margin:5px auto;border:3px solid #fff}
+h1{color:#fbbf24;margin:5px 0}
+.dialect{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin:8px 0}
+.dialect button{background:#334155;color:#fff;border:1px solid #fbbf24;border-radius:20px;padding:7px 11px}
+.dialect button.active{background:#fbbf24;color:#000;font-weight:bold}
+#chat{height:50vh;overflow:auto;background:#1e293b;border-radius:15px;padding:12px;margin-bottom:10px}
+.msg{padding:11px;border-radius:12px;margin:8px 0;max-width:90%;line-height:1.8}
+.user{background:#2563eb;margin-right:auto}
+.bot{background:#334155}
+.speakBtn{background:#fbbf24;border:none;border-radius:20px;padding:6px 12px;margin-top:6px;font-weight:bold}
+input{width:56%;padding:13px;border-radius:20px;border:none;color:#000}
+button.send{width:18%;padding:13px;border-radius:20px;border:none;background:#fbbf24;font-weight:bold}
+button.mic{width:18%;padding:13px;border-radius:20px;border:none;background:#dc2626;color:#fff;font-size:18px}
+</style>
+</head>
+<body>
+<div class="header"><div class="logo">⚔️</div><h1>المهلهل</h1><p>جرب السوري، صوته أنظف!</p></div>
+<p id="currentDialect" style="text-align:center;color:#fbbf24">اللهجة: تلقائي</p>
+<div class="dialect">
+<button onclick="setDialect('auto',this)" class="active">تلقائي</button>
+<button onclick="setDialect('sanaani',this)">صنعاني</button>
+<button onclick="setDialect('taizi',this)">تعزي</button>
+<button onclick="setDialect('adeni',this)">عدني</button>
+<button onclick="setDialect('syrian',this)">🇸🇾 سوري</button>
+<button onclick="setDialect('english',this)">English</button>
+</div>
+<div id="chat"><div class="msg bot">اهلين يا غالي، شو بدك اليوم؟ والله نورت.<br><button class="speakBtn" id="firstSpeak">اسمع صوتي بالسوري</button></div></div>
+<div style="display:flex;gap:5px">
+<input id="inp" placeholder="تكلم سوري هنا: اهلين كيفك...">
+<button class="mic" id="micBtn">🎤</button>
+<button class="send" id="sendBtn">أرسل</button>
+</div>
+<p id="status" style="text-align:center;color:#fbbf24"></p>
+<script>
+let history=[]; let manualDialect='auto'; let currentDialect='syrian';
+
+function fixForSpeech(t){
+  let map={'موجودن':'موجود','بلاهي':'بالله','ولاهي':'والله','يوه':'نعم','ايوه':'نعم','خالي معاي':'انا هنا','معاي':'معي','يمكنا':'ممكن','هاكذا':'هكذا'};
+  for(let k in map){ t=t.split(k).join(map[k]); }
+  return t;
+}
+function detectDialect(text){
+  if(manualDialect!=='auto') return manualDialect;
+  if(/[a-zA-Z]{3,}/.test(text)) return 'english';
+  // سوري
+  if(/اهلين|شو|بدك|كيفك|حبيبي|والله|شلونك|وينك|شو عم/.test(text)) return 'syrian';
+  if(/كيفك|اشتي|موش|وينك|هيا|قلبي/.test(text)) return 'taizi';
+  if(/فين|كود|بغيت|هب|ياخي|مفتهن/.test(text)) return 'adeni';
+  return 'sanaani';
+}
+function getDialectPrompt(d){
+  let forbidden=`ممنوع تقول: يوه، خالي، معاي، بلاهي، موجودن، يمكنا. قول بدلها: نعم، انا هنا، انا موجود، بالله، ممكن. اكتب بدون تشكيل، جمل قصيرة.`;
+  if(d==='syrian') return `انت المهلهل السوري، من دمشق، تتكلم سوري فقط، لهجة شامية واضحة.
+كلماتك: اهلين، هلا والله، كيفك، شو بدك، شو اخبارك، والله، حبيبي، يا غالي، منور، تمام، يلا.
+تتكلم مثل السوريين في المسلسلات، كلام نظيف وواضح، الصوت ينطقه صح.
+${forbidden}`;
+  if(d==='taizi') return `انت المهلهل التعزي. كلماتك: كيفك، اش تشتي، انا هنا، انا موجود، نعم، هلا. ${forbidden} ممنوع تقول ايش، قول اش.`;
+  if(d==='adeni') return `انت المهلهل العدني. كلماتك: فين، اش تشتي، انا هنا، انا موجود، نعم، هلا. ${forbidden}`;
+  if(d==='english') return `You are Al-Muhalhil. Speak ONLY English, short sentences.`;
+  return `انت المهلهل الصنعاني. كلماتك: ارحب، يا غالي، اش تشتي، هلا والله، انا في صنعاء، انا موجود. ${forbidden} ممنوع تقول ايش، قول اش.`;
+}
+function setDialect(d,btn){
+  manualDialect=d;
+  document.querySelectorAll('.dialect button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  let names={auto:'تلقائي',sanaani:'صنعاني',taizi:'تعزي',adeni:'عدني',syrian:'سوري',english:'English'};
+  document.getElementById('currentDialect').innerText='اللهجة: '+names[d];
+  // اذا ضغط سوري، خليه يقول جملة سورية على طول
+  if(d==='syrian') speakText('اهلين يا غالي، كيفك؟ شو بدك اليوم؟ والله نورت.');
+}
+function speakText(text){
+  window.speechSynthesis.cancel();
+  let clean=fixForSpeech(text).replace(/[🧔⚔️📜📖💡📚🎤🔊✨🌟😊😂❤️👌🙏]/g,'').replace(/[ًٌٍَُِّْ]/g,'').trim();
+  let u=new SpeechSynthesisUtterance(clean);
+  let voices=window.speechSynthesis.getVoices();
+  if(currentDialect==='english'){ u.lang='en-US'; let v=voices.find(v=>v.lang.startsWith('en')); if(v) u.voice=v; }
+  else if(currentDialect==='syrian'){
+    // السوري: نستخدم صوت شامي، هو انظف صوت عند جوجل
+    u.lang='ar-SA';
+    let v=voices.find(v=>v.lang==='ar-SA')||voices.find(v=>v.lang.startsWith('ar'));
+    if(v) u.voice=v;
+  }
+  else { u.lang='ar-SA'; let v=voices.find(v=>v.lang==='ar-SA')||voices.find(v=>v.lang.startsWith('ar')); if(v) u.voice=v; }
+  u.rate=0.9; // سوري يتكلم اسرع شوية، طبيعي
+  u.pitch=0.95;
+  u.volume=1;
+  window.speechSynthesis.speak(u);
+}
+document.getElementById('firstSpeak').addEventListener('click', ()=>{ currentDialect='syrian'; speakText('اهلين يا غالي، كيفك؟ شو بدك اليوم؟ والله نورت.'); });
+document.getElementById('sendBtn').addEventListener('click', send);
+document.getElementById('micBtn').addEventListener('click', startListening);
+document.getElementById('inp').addEventListener('keypress', e=>{ if(e.key==='Enter') send(); });
+function startListening(){
+  let SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ alert('افتح في كروم'); return; }
+  let rec=new SR(); rec.lang='ar-SA';
+  document.getElementById('status').innerText='اتكلم ذلحين...';
+  rec.onresult=e=>{ document.getElementById('inp').value=e.results[0][0].transcript; document.getElementById('status').innerText=''; send(); };
+  rec.start();
+}
+async function send(){
+  let inp=document.getElementById('inp'); let txt=inp.value.trim(); if(!txt) return;
+  currentDialect=detectDialect(txt);
+  let names={sanaani:'صنعاني',taizi:'تعزي',adeni:'عدني',syrian:'سوري',english:'English'};
+  document.getElementById('currentDialect').innerText='كشفت لهجتك: '+names[currentDialect];
+  let chat=document.getElementById('chat');
+  chat.innerHTML+='<div class="msg user">'+txt+'</div>'; inp.value=''; history.push(txt);
+  chat.innerHTML+='<div class="msg bot" id="loading">المهلهل يفكر...</div>'; chat.scrollTop=chat.scrollHeight;
+  try{
+    let prompt=getDialectPrompt(currentDialect)+` تتذكر: ${history.slice(-8).join(' | ')} سؤال المستخدم: ${txt}`;
+    let res=await fetch('https://text.pollinations.ai/'+encodeURIComponent(prompt)+'?model=openai');
+    let data=await res.text();
+    data=fixForSpeech(data);
     let el=document.getElementById('loading'); if(el) el.remove();
     let id='msg'+Date.now();
     chat.innerHTML+='<div class="msg bot" id="'+id+'">'+data+'<br><button class="speakBtn">اسمع صوتي</button></div>';
