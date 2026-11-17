@@ -21,39 +21,62 @@ img.banner{width:100%;border-radius:15px;height:80px;object-fit:cover}
 </style>
 </head>
 <body>
-<div class="header"><div class="logo">⚔️</div><h1>المهلهل</h1><p>رجال يمني من صنعاء 🎤 صوت طبيعي</p></div>
+<div class="header"><div class="logo">⚔️</div><h1>المهلهل</h1><p>صوت عربي صحيح وواضح 🔊</p></div>
 <img class="banner" src="https://images.unsplash.com/photo-1572252009286-268acec5ca0a?w=800&q=80">
-<div id="chat"><div class="msg bot">🧔 هلااا والله يا غالي، ارحب! أنا المهلهل من صنعاء، من قلب اليمن. كيف حالك؟<br><button class="speakBtn" id="firstSpeak">🔊 اسمع صوتي</button></div></div>
+<div id="chat"><div class="msg bot">🧔 هلا والله يا غالي، ارحب! أنا المهلهل من صنعاء. كيف الحال؟<br><button class="speakBtn" id="firstSpeak">🔊 اسمع صوتي</button></div></div>
 <div style="display:flex;gap:5px">
 <input id="inp" placeholder="اكتب هنا...">
 <button class="mic" id="micBtn">🎤</button>
 <button class="send" id="sendBtn">أرسل</button>
 </div>
 <p id="status" style="text-align:center;color:#fbbf24"></p>
+<audio id="player" style="display:none"></audio>
 <script>
 let history=[];
+let audioQueue=[]; let isPlaying=false;
 
-// --- صوت رجال يمني طبيعي ---
-function speakText(text){
-  window.speechSynthesis.cancel();
-  let u = new SpeechSynthesisUtterance(text);
-  let voices = window.speechSynthesis.getVoices().filter(v=>v.lang.startsWith('ar'));
-  // ندور على صوت رجالي بالاسم
-  let male = voices.find(v=>/hamed|naayf|omar|zayd|salim|male|رجل/i.test(v.name));
-  let saudi = voices.find(v=>v.lang==='ar-SA');
-  if(male) u.voice = male;
-  else if(saudi) u.voice = saudi;
-  else if(voices[0]) u.voice = voices[0];
-  u.lang='ar-SA';
-  u.rate=0.95; // طبيعي، لا سريع
-  u.pitch=0.55; // صوت رجال ثقيل، مو صوت بنت
-  u.volume=1;
-  window.speechSynthesis.speak(u);
+// --- تنظيف الكلام عشان ينطقه صح ---
+function cleanText(t){
+  return t
+    .replace(/[🧔⚔️📜📖💡📚🎤🔊✨🌟😊😂❤️👌🙏]/g,'')
+    .replace(/واللهي/g,'والله')
+    .replace(/والله/g,'وَاللَّه')
+    .replace(/هلاا+/g,'هلا')
+    .replace(/ارحب+/g,'ارحب')
+    .replace(/[؟?]/g,'. ')
+    .replace(/[!]/g,'. ')
+    .replace(/\s+/g,' ')
+    .trim();
 }
-window.speechSynthesis.onvoiceschanged = function(){};
+
+// --- صوت جوجل الحقيقي - ينطق صح ---
+function speakText(text){
+  let clean = cleanText(text);
+  // نقسم الكلام جمل صغيرة عشان ما يتلخبط
+  let parts = clean.match(/[^.]{1,150}[.]/g) || [clean];
+  audioQueue = parts;
+  playNext();
+}
+function playNext(){
+  if(audioQueue.length===0){ isPlaying=false; return; }
+  isPlaying=true;
+  let part = audioQueue.shift();
+  let player = document.getElementById('player');
+  // صوت جوجل العربي - ينطق الله صح
+  player.src = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=' + encodeURIComponent(part);
+  player.play();
+  player.onended = playNext;
+  player.onerror = function(){
+    // اذا جوجل ما اشتغل، نرجع للصوت القديم
+    let u = new SpeechSynthesisUtterance(part);
+    u.lang='ar-SA'; u.rate=0.9; u.pitch=0.9;
+    window.speechSynthesis.speak(u);
+    setTimeout(playNext, 800);
+  };
+}
 
 document.getElementById('firstSpeak').addEventListener('click', function(){
-  speakText('هلااا والله يا غالي، ارحب، أنا المهلهل من صنعاء، من قلب اليمن، كيف حالك؟');
+  speakText('هلا والله يا غالي، ارحب. أنا المهلهل من صنعاء. كيف الحال في صنعاء اليوم؟');
 });
 document.getElementById('sendBtn').addEventListener('click', send);
 document.getElementById('micBtn').addEventListener('click', startListening);
@@ -70,7 +93,6 @@ function startListening(){
     document.getElementById('status').innerText='';
     send();
   };
-  rec.onerror=function(){ document.getElementById('status').innerText='اسمح للميكروفون من القفل فوق'; };
   rec.start();
 }
 
@@ -84,12 +106,11 @@ async function send(){
   chat.innerHTML+='<div class="msg bot" id="loading">المهلهل يفكر...</div>';
   chat.scrollTop=chat.scrollHeight;
   try{
-    // تعليمات قوية تمنع المصري وتجبر اليمني
-    let prompt = `انت المهلهل، رجال يمني أصيل من صنعاء، عمرك 35 سنة، صوتك رجالي ثقيل.
-ممنوع تقول: انا صديق رقمي، انا ذكاء اصطناعي، انا مساعد رقمي.
-ممنوع تستخدم كلمات مصرية مثل: عشان، عايز، ازاي، دلوقتي، بقى.
-لازم تستخدم كلمات يمنية فقط مثل: هلا والله، ارحب، يا غالي، يا بطل، افدي قلبك، كيف حالك، ايش تشتي، ذلحين، تمام، والله.
-ترد باللهجة اليمنية الصنعانية، كلام طبيعي، لا تسرع، جمل قصيرة ومفهومة.
+    let prompt = `انت المهلهل، رجال يمني أصيل من صنعاء.
+ممنوع تقول: انا صديق رقمي، انا ذكاء اصطناعي.
+ممنوع تستخدم كلمات مصرية: عشان، عايز، ازاي، دلوقتي.
+لازم تستخدم يمني فقط: هلا والله، ارحب، يا غالي، يا بطل، كيف حالك، ايش تشتي، ذلحين.
+اكتب بالعربية الفصحى البسيطة مع كلمات يمنية، جمل قصيرة وواضحة، عشان الصوت ينطقها صح.
 تتذكر: ${history.slice(-8).join(' | ')}
 سؤال المستخدم: ${txt}`;
     let res=await fetch('https://text.pollinations.ai/'+encodeURIComponent(prompt)+'?model=openai');
