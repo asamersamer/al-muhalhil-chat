@@ -3,95 +3,92 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>المهلهل | Al-Muhalhil</title>
+<title>المهلهل</title>
 <style>
 body{font-family:system-ui;background:#0f172a;color:#fff;margin:0;padding:10px}
 .header{text-align:center}
-.logo{width:90px;height:90px;border-radius:50%;background:linear-gradient(45deg,#fbbf24,#dc2626);display:flex;align-items:center;justify-content:center;font-size:55px;margin:5px auto;border:3px solid #fff;box-shadow:0 0 25px #fbbf24}
+.logo{width:90px;height:90px;border-radius:50%;background:linear-gradient(45deg,#fbbf24,#dc2626);display:flex;align-items:center;justify-content:center;font-size:55px;margin:5px auto;border:3px solid #fff}
 h1{color:#fbbf24;margin:5px 0}
-.subtitle{color:#cbd5e1;font-size:13px}
-#chat{height:50vh;overflow:auto;background:#1e293b;border-radius:15px;padding:12px;margin-bottom:10px}
+#chat{height:52vh;overflow:auto;background:#1e293b;border-radius:15px;padding:12px;margin-bottom:10px}
 .msg{padding:11px;border-radius:12px;margin:8px 0;max-width:90%;line-height:1.8}
 .user{background:#2563eb;margin-right:auto}
 .bot{background:#334155}
 .speakBtn{background:#fbbf24;border:none;border-radius:20px;padding:6px 12px;margin-top:6px;font-weight:bold}
-input{width:58%;padding:13px;border-radius:20px;border:none}
+input{width:56%;padding:13px;border-radius:20px;border:none;color:#000}
 button.send{width:18%;padding:13px;border-radius:20px;border:none;background:#fbbf24;font-weight:bold}
 button.mic{width:18%;padding:13px;border-radius:20px;border:none;background:#dc2626;color:#fff;font-size:18px}
 img.banner{width:100%;border-radius:15px;height:80px;object-fit:cover}
-.listening{background:#dc2626 !important;animation:blink 1s infinite}
-@keyframes blink{50%{opacity:0.6}}
 </style>
 </head>
 <body>
-<div class="header"><div class="logo">⚔️</div><h1>المهلهل</h1><p class="subtitle">تكلم معه بصوتك 🎤 | صوت طبيعي يمني</p></div>
+<div class="header"><div class="logo">⚔️</div><h1>المهلهل</h1><p>تكلم معه بصوتك 🎤 | صوت طبيعي</p></div>
 <img class="banner" src="https://images.unsplash.com/photo-1572252009286-268acec5ca0a?w=800&q=80">
-<div id="chat"><div class="msg bot">🧔 هلااا يا غالي! اضغط على زر الميكروفون 🎤 وتكلم، وأنا باسمعك وبرد عليك بصوتي.<br><button class="speakBtn" onclick="speak(this)">🔊 اسمع صوتي</button></div></div>
+<div id="chat"><div class="msg bot" id="firstMsg">🧔 هلااا يا غالي! اضغط الميكروفون وتكلم، وأنا برد عليك.<br><button class="speakBtn" id="firstSpeak">🔊 اسمع صوتي</button></div></div>
 <div style="display:flex;gap:5px">
-<input id="inp" placeholder="أو اكتب هنا...">
-<button class="mic" id="micBtn" onclick="startListening()">🎤</button>
-<button class="send" onclick="send()">أرسل</button>
+<input id="inp" placeholder="اكتب هنا...">
+<button class="mic" id="micBtn">🎤</button>
+<button class="send" id="sendBtn">أرسل</button>
 </div>
-<p id="status" style="text-align:center;color:#fbbf24;font-size:13px"></p>
+<p id="status" style="text-align:center;color:#fbbf24"></p>
 <script>
 let history=[];
-let recognition=null;
-
-// --- الصوت الطبيعي اليمني - بدون سرعة ---
-function speakYemeni(text){
-  window.speechSynthesis.cancel();
-  let u = new SpeechSynthesisUtterance(text);
-  let voices = window.speechSynthesis.getVoices().filter(v=>v.lang.startsWith('ar'));
-  let v = voices.find(v=>v.lang==='ar-SA') || voices[0];
-  if(v) u.voice = v;
-  u.lang='ar-SA';
-  u.rate=1.0; // طبيعي 100% - لا سريع ولا بطيء
-  u.pitch=1.0; // طبيعي
-  u.volume=1;
-  window.speechSynthesis.speak(u);
+function speakText(text){
+  try{
+    window.speechSynthesis.cancel();
+    let u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ar-SA';
+    u.rate = 1.0;
+    u.pitch = 1.0;
+    u.volume = 1;
+    window.speechSynthesis.speak(u);
+  }catch(e){ alert('الصوت ما اشتغل: '+e); }
 }
-function speak(btn){
-  let text=btn.parentElement.innerText.replace('🔊 اسمع صوتي','').replace('🧔','');
-  speakYemeni(text);
-}
+document.getElementById('firstSpeak').addEventListener('click', function(){
+  speakText('هلااا يا غالي، أنا المهلهل من صنعاء، كيف حالك؟');
+});
+document.getElementById('sendBtn').addEventListener('click', send);
+document.getElementById('micBtn').addEventListener('click', startListening);
+document.getElementById('inp').addEventListener('keypress', function(e){ if(e.key==='Enter') send(); });
 
-// --- الميكروفون: يسمعك لما تخلص كلامك ---
 function startListening(){
   let SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ alert('متصفحك ما يدعم الميكروفون، استخدم كروم'); return; }
-  if(!recognition){
-    recognition = new SR();
-    recognition.lang='ar-SA';
-    recognition.interimResults=false;
-    recognition.continuous=false;
-    recognition.onresult=function(e){
-      let txt=e.results[0][0].transcript;
-      document.getElementById('inp').value=txt;
-      document.getElementById('status').innerText='سمعتك: '+txt;
-      document.getElementById('micBtn').classList.remove('listening');
-      send(); // يرسل تلقائيا بعد ما تخلص كلامك
-    };
-    recognition.onend=function(){ document.getElementById('micBtn').classList.remove('listening'); document.getElementById('status').innerText=''; };
-    recognition.onerror=function(){ document.getElementById('micBtn').classList.remove('listening'); };
-  }
-  document.getElementById('micBtn').classList.add('listening');
-  document.getElementById('status').innerText='🎤 اتكلم ذلحين... أنا اسمعك...';
-  recognition.start();
+  if(!SR){ alert('متصفحك ما يدعم الميكروفون، افتح الموقع في جوجل كروم'); return; }
+  let rec = new SR();
+  rec.lang='ar-SA';
+  document.getElementById('status').innerText='🎤 اتكلم ذلحين...';
+  rec.onresult=function(e){
+    let txt=e.results[0][0].transcript;
+    document.getElementById('inp').value=txt;
+    document.getElementById('status').innerText='سمعتك: '+txt;
+    send();
+  };
+  rec.onerror=function(e){ document.getElementById('status').innerText='مشكلة في الميكروفون: اسمح له من القفل فوق'; };
+  rec.onend=function(){ document.getElementById('status').innerText=''; };
+  try{ rec.start(); }catch(e){ alert('اضغط سماح للميكروفون فوق'); }
 }
-
 async function send(){
   let inp=document.getElementById('inp');
-  let txt=inp.value.trim(); if(!txt) return;
+  let txt=inp.value.trim();
+  if(!txt){ alert('اكتب شي أول'); return; }
   let chat=document.getElementById('chat');
-  chat.innerHTML+=`<div class="msg user">${txt}</div>`;
-  inp.value=''; history.push('المستخدم: '+txt);
-  chat.innerHTML+=`<div class="msg bot" id="loading">المهلهل يسمعك... ⚔️</div>`;
+  chat.innerHTML+='<div class="msg user">'+txt+'</div>';
+  inp.value=''; history.push(txt);
+  chat.innerHTML+='<div class="msg bot" id="loading">المهلهل يفكر...</div>';
   chat.scrollTop=chat.scrollHeight;
   try{
-    let system=`انت المهلهل، شاعر يمني من صنعاء، تتكلم باللهجة اليمنية الطبيعية، كلامك طبيعي ومفهوم، لا تسرع، وتتكلم مثل صديق يمني. تتذكر المحادثة: ${history.slice(-10).join(' | ')} سؤال المستخدم: ${txt}`;
-    let res=await fetch('https://text.pollinations.ai/'+encodeURIComponent(system)+'?model=openai');
+    let prompt='انت المهلهل، شاعر يمني من صنعاء، ترد باللهجة اليمنية الطبيعية، كلامك طبيعي ومفهوم. سؤال المستخدم: '+txt;
+    let res=await fetch('https://text.pollinations.ai/'+encodeURIComponent(prompt)+'?model=openai');
     let data=await res.text();
-    document.getElementById('loading').remove();
-    history.push('المهلهل: '+data);
-    chat.innerHTML+=`<div class="msg bot">🧔 ${data}<br><button class="speakBtn" onclick="speak(this)">🔊 اسمع صوتي</button></div>`;
-    speakYemeni(data); // يتكلم بعد ما تخلص انت
+    let el=document.getElementById('loading'); if(el) el.remove();
+    let id='msg'+Date.now();
+    chat.innerHTML+='<div class="msg bot" id="'+id+'">🧔 '+data+'<br><button class="speakBtn">🔊 اسمع صوتي</button></div>';
+    document.getElementById(id).querySelector('.speakBtn').addEventListener('click', function(){ speakText(data); });
+    speakText(data);
+  }catch(e){
+    let el=document.getElementById('loading'); if(el) el.innerText='حصلت مشكلة بالنت، حاول مرة ثانية';
+  }
+  chat.scrollTop=chat.scrollHeight;
+}
+</script>
+</body>
+</html>
