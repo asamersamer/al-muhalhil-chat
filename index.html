@@ -1,82 +1,24 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>المهلهل - سوري</title>
-<style>
-body{font-family:system-ui;background:#0f172a;color:#fff;margin:0;padding:10px}
-.header{text-align:center}
-.logo{width:90px;height:90px;border-radius:50%;background:linear-gradient(45deg,#fbbf24,#dc2626);display:flex;align-items:center;justify-content:center;font-size:55px;margin:5px auto;border:3px solid #fff}
-h1{color:#fbbf24;margin:5px 0}
-#chat{height:60vh;overflow:auto;background:#1e293b;border-radius:15px;padding:12px;margin-bottom:10px}
-.msg{padding:11px;border-radius:12px;margin:8px 0;max-width:90%;line-height:1.8}
-.user{background:#2563eb;margin-right:auto}
-.bot{background:#334155}
-.speakBtn{background:#fbbf24;border:none;border-radius:20px;padding:6px 12px;margin-top:6px;font-weight:bold}
-input{width:56%;padding:13px;border-radius:20px;border:none;color:#000}
-button.send{width:18%;padding:13px;border-radius:20px;border:none;background:#fbbf24;font-weight:bold}
-button.mic{width:18%;padding:13px;border-radius:20px;border:none;background:#dc2626;color:#fff;font-size:18px}
-</style>
-</head>
-<body>
-<div class="header"><div class="logo">⚔️</div><h1>المهلهل</h1><p>سوري - كلام نظيف وواضح</p></div>
-<div id="chat"><div class="msg bot">اهلين يا غالي، كيفك؟ شو بدك اليوم؟ والله نورت.<br><button class="speakBtn" id="firstSpeak">اسمع صوتي</button></div></div>
-<div style="display:flex;gap:5px">
-<input id="inp" placeholder="اكتب سوري هنا: اهلين كيفك...">
-<button class="mic" id="micBtn">🎤</button>
-<button class="send" id="sendBtn">أرسل</button>
-</div>
-<p id="status" style="text-align:center;color:#fbbf24"></p>
-<script>
-let history=[];
+from fastapi import FastAPI
+from pydantic import BaseModel
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 
-function speakText(text){
-  window.speechSynthesis.cancel();
-  let clean=text.replace(/[🧔⚔️📜📖💡📚🎤🔊✨🌟😊😂❤️👌🙏]/g,'').replace(/[ًٌٍَُِّْ]/g,'').trim();
-  let u=new SpeechSynthesisUtterance(clean);
-  let voices=window.speechSynthesis.getVoices();
-  u.lang='ar-SA';
-  let v=voices.find(v=>v.lang==='ar-SA')||voices.find(v=>v.lang.startsWith('ar'));
-  if(v) u.voice=v;
-  u.rate=0.9;
-  u.pitch=0.95;
-  u.volume=1;
-  window.speechSynthesis.speak(u);
-}
+app = FastAPI()
+model_id = "Asamersame/al-muhalhil"
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype="auto", device_map="auto")
 
-document.getElementById('firstSpeak').addEventListener('click', ()=>speakText('اهلين يا غالي، كيفك؟ شو بدك اليوم؟ والله نورت.'));
-document.getElementById('sendBtn').addEventListener('click', send);
-document.getElementById('micBtn').addEventListener('click', startListening);
-document.getElementById('inp').addEventListener('keypress', e=>{ if(e.key==='Enter') send(); });
+class Msg(BaseModel):
+    message: str
 
-function startListening(){
-  let SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){ alert('افتح في كروم'); return; }
-  let rec=new SR(); rec.lang='ar-SA';
-  document.getElementById('status').innerText='اتكلم...';
-  rec.onresult=e=>{ document.getElementById('inp').value=e.results[0][0].transcript; document.getElementById('status').innerText=''; send(); };
-  rec.start();
-}
+@app.post("/chat")
+def chat(data: Msg):
+    prompt = f"انت المهلهل، شاعر يمني حكيم، ترد باللهجة اليمنية الصنعانية باحترام ومرح.\nالمستخدم: {data.message}\nالمهلهل:"
+    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    out = model.generate(**inputs, max_new_tokens=200, temperature=0.7, do_sample=True)
+    reply = tokenizer.decode(out[0][inputs.input_ids.shape[1]:], skip_special_tokens=True)
+    return {"reply": reply}
 
-async function send(){
-  let inp=document.getElementById('inp'); let txt=inp.value.trim(); if(!txt) return;
-  let chat=document.getElementById('chat');
-  chat.innerHTML+='<div class="msg user">'+txt+'</div>'; inp.value=''; history.push(txt);
-  chat.innerHTML+='<div class="msg bot" id="loading">المهلهل يفكر...</div>'; chat.scrollTop=chat.scrollHeight;
-  try{
-    let prompt=`انت المهلهل السوري، من دمشق، تتكلم سوري فقط، لهجة شامية واضحة. كلماتك: اهلين، هلا والله، كيفك، شو بدك، شو اخبارك، والله، حبيبي، يا غالي، منور، تمام، يلا. تتكلم مثل السوريين في المسلسلات، كلام نظيف وواضح. اكتب بدون تشكيل، جمل قصيرة. تتذكر: ${history.slice(-8).join(' | ')} سؤال المستخدم: ${txt}`;
-    let res=await fetch('https://text.pollinations.ai/'+encodeURIComponent(prompt)+'?model=openai');
-    let data=await res.text();
-    let el=document.getElementById('loading'); if(el) el.remove();
-    let id='msg'+Date.now();
-    chat.innerHTML+='<div class="msg bot" id="'+id+'">'+data+'<br><button class="speakBtn">اسمع صوتي</button></div>';
-    document.getElementById(id).querySelector('.speakBtn').addEventListener('click', ()=>speakText(data));
-    speakText(data);
-  }catch(e){ let el=document.getElementById('loading'); if(el) el.innerText='مشكلة بالنت'; }
-  chat.scrollTop=chat.scrollHeight;
-}
-window.speechSynthesis.getVoices();
-</script>
-</body>
-</html>
+@app.get("/")
+def home():
+    return {"status": "المهلهل شغال"}
