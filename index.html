@@ -12,7 +12,7 @@ h1{color:#fbbf24;margin:5px 0}
 .dialect{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin:8px 0}
 .dialect button{background:#334155;color:#fff;border:1px solid #fbbf24;border-radius:20px;padding:7px 11px}
 .dialect button.active{background:#fbbf24;color:#000;font-weight:bold}
-#chat{height:48vh;overflow:auto;background:#1e293b;border-radius:15px;padding:12px;margin-bottom:10px}
+#chat{height:50vh;overflow:auto;background:#1e293b;border-radius:15px;padding:12px;margin-bottom:10px}
 .msg{padding:11px;border-radius:12px;margin:8px 0;max-width:90%;line-height:1.8}
 .user{background:#2563eb;margin-right:auto}
 .bot{background:#334155}
@@ -21,139 +21,104 @@ input{width:56%;padding:13px;border-radius:20px;border:none;color:#000}
 button.send{width:18%;padding:13px;border-radius:20px;border:none;background:#fbbf24;font-weight:bold}
 button.mic{width:18%;padding:13px;border-radius:20px;border:none;background:#dc2626;color:#fff;font-size:18px}
 img.banner{width:100%;border-radius:15px;height:70px;object-fit:cover}
-#currentDialect{text-align:center;color:#fbbf24;font-size:13px;margin:4px}
 </style>
 </head>
 <body>
-<div class="header"><div class="logo">⚔️</div><h1>المهلهل</h1><p>يتكلم بلهجتك أنت! 🎤</p></div>
+<div class="header"><div class="logo">⚔️</div><h1>المهلهل</h1><p>يتكلم بلهجتك، كلام طبيعي بدون تشكيل</p></div>
 <img class="banner" src="https://images.unsplash.com/photo-1572252009286-268acec5ca0a?w=800&q=80">
-<p id="currentDialect">🎯 اللهجة الحالية: تلقائي - بيكشف لهجتك لحاله</p>
+<p id="currentDialect" style="text-align:center;color:#fbbf24;font-size:13px">اللهجة: تلقائي</p>
 <div class="dialect">
-<button onclick="setDialect('auto',this)" class="active">🤖 تلقائي</button>
+<button onclick="setDialect('auto',this)" class="active">تلقائي</button>
 <button onclick="setDialect('sanaani',this)">صنعاني</button>
 <button onclick="setDialect('taizi',this)">تعزي</button>
 <button onclick="setDialect('adeni',this)">عدني</button>
-<button onclick="setDialect('hadrami',this)">حضرمي</button>
 <button onclick="setDialect('english',this)">English</button>
 </div>
-<div id="chat"><div class="msg bot">🧔 هلا والله! أنا المهلهل، أتكلم بلهجتك أنت. تكلم معي صنعاني، تعزي، عدني، انجليزي، وأنا برد عليك بنفس لهجتك!<br><button class="speakBtn" id="firstSpeak">🔊 اسمع صوتي</button></div></div>
+<div id="chat"><div class="msg bot">هلا والله يا غالي، ارحب، كيف حالك؟<br><button class="speakBtn" id="firstSpeak">اسمع صوتي</button></div></div>
 <div style="display:flex;gap:5px">
 <input id="inp" placeholder="تكلم بلهجتك هنا...">
 <button class="mic" id="micBtn">🎤</button>
 <button class="send" id="sendBtn">أرسل</button>
 </div>
 <p id="status" style="text-align:center;color:#fbbf24"></p>
-<audio id="player" style="display:none"></audio>
 <script>
-let history=[];
-let manualDialect='auto';
-let currentLang='ar';
-let currentDialect='sanaani';
+let history=[]; let manualDialect='auto'; let currentDialect='sanaani';
 
-// --- كشف اللهجة من كلام المستخدم ---
 function detectDialect(text){
   if(manualDialect!=='auto') return manualDialect;
-  // انجليزي؟
   if(/[a-zA-Z]{3,}/.test(text)) return 'english';
-  // تعزي: كلمات تعز
-  if(/كيفك|اشتي|موش|اشو|قلبي|وينك|هيا|لَمو|شاجلس|اشفعل|جالس|مابش|قده|قدهو/.test(text)) return 'taizi';
-  // عدني: كلمات عدن
-  if(/فيّن|اشتي|كود|بغيت|هب|ياخي|الدنيا|هدرة|مفتهن/.test(text)) return 'adeni';
-  // حضرمي: كلمات حضرموت
-  if(/بغيت|وين|هب|ياخوي|عاد|شي|بلا|كذا/.test(text)) return 'hadrami';
-  // صنعاني: كلمات صنعاء
-  if(/ذلحين|ارحب|ايش|كيف حالك|افدي|تمام|قوي/.test(text)) return 'sanaani';
+  if(/كيفك|اشتي|موش|وينك|هيا|قلبي/.test(text)) return 'taizi';
+  if(/فين|كود|بغيت|هب|ياخي|مفتهن/.test(text)) return 'adeni';
   return 'sanaani';
 }
 function getDialectPrompt(d){
-  if(d==='taizi') return `انت المهلهل التعزي، من تعز، تتكلم لهجة تعزية أصيلة فقط.
-كلماتك: كيفك، اشتي، موش، وينك، هيا، قلبي، شاجلس تفعل، مو بك، لمو، قدك تمام.
-ممنوع تتكلم صنعاني أو مصري. جمل قصيرة وواضحة عشان الصوت ينطقها صح.`;
-  if(d==='adeni') return `انت المهلهل العدني، من عدن، تتكلم لهجة عدنية أصيلة فقط.
-كلماتك: فيّن، اشتي، كود، بغيت، هب، ياخي، مفتهن، هدرة، الدنيا تمام.
-ممنوع تتكلم صنعاني أو مصري. جمل قصيرة وواضحة.`;
-  if(d==='hadrami') return `انت المهلهل الحضرمي، من حضرموت، تتكلم لهجة حضرمية أصيلة فقط.
-كلماتك: بغيت، وين، هب، ياخوي، عاد، شي، بلا، كذا، تمام.
-ممنوع تتكلم صنعاني أو مصري. جمل قصيرة وواضحة.`;
-  if(d==='english') return `You are Al-Muhalhil, a friendly Yemeni man. Speak ONLY in English, natural American English, short clear sentences. Be friendly and funny.`;
-  return `انت المهلهل الصنعاني، من صنعاء، تتكلم لهجة صنعانية أصيلة فقط.
-كلماتك: هلا والله، ارحب، يا غالي، يا بطل، كيف حالك، ايش تشتي، ذلحين، افدي قلبك، تمام.
-ممنوع تتكلم مصري أو تعزي. جمل قصيرة وواضحة عشان الصوت ينطقها صح.`;
+  if(d==='taizi') return `انت المهلهل التعزي، تتكلم تعزي فقط. كلماتك: كيفك، اشتي، موش، وينك، هيا، قلبي. اكتب بدون تشكيل نهائيا، بدون حركات، كلام عادي مثل الواتساب. ممنوع مصري وممنوع صنعاني. جمل قصيرة.`;
+  if(d==='adeni') return `انت المهلهل العدني، تتكلم عدني فقط. كلماتك: فين، اشتي، كود، بغيت، هب، ياخي. اكتب بدون تشكيل نهائيا، كلام عادي مثل الواتساب. جمل قصيرة.`;
+  if(d==='english') return `You are Al-Muhalhil, Yemeni man. Speak ONLY English, natural, short sentences.`;
+  return `انت المهلهل الصنعاني، تتكلم صنعاني فقط. كلماتك: هلا والله، ارحب، يا غالي، يا بطل، كيف حالك، ايش تشتي، ذلحين. اكتب بدون تشكيل نهائيا، بدون حركات، كلام عادي مثل ما نكتب في الواتساب. ممنوع مصري. جمل قصيرة وواضحة.`;
 }
-function setDialect(d, btn){
+function setDialect(d,btn){
   manualDialect=d;
   document.querySelectorAll('.dialect button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  let names={auto:'تلقائي',sanaani:'صنعاني',taizi:'تعزي',adeni:'عدني',hadrami:'حضرمي',english:'English'};
-  document.getElementById('currentDialect').innerText='🎯 اللهجة الحالية: '+names[d];
+  let names={auto:'تلقائي',sanaani:'صنعاني',taizi:'تعزي',adeni:'عدني',english:'English'};
+  document.getElementById('currentDialect').innerText='اللهجة: '+names[d];
 }
 
-function cleanText(t){
-  return t.replace(/[🧔⚔️📜📖💡📚🎤🔊✨🌟😊😂❤️👌🙏]/g,'').replace(/واللهي/g,'والله').replace(/والله/g,'وَاللَّه').replace(/[؟?]/g,'. ').replace(/[!]/g,'. ').replace(/\s+/g,' ').trim();
-}
-let audioQueue=[];
+// --- الصوت الطبيعي بدون تشكيل ---
 function speakText(text){
-  let clean=cleanText(text);
-  let parts=clean.match(/[^.]{1,150}[.]/g)||[clean];
-  audioQueue=parts; playNext();
+  window.speechSynthesis.cancel();
+  // نمسح اي تشكيل لو موجود، ونمسح الايموجي
+  let clean = text.replace(/[🧔⚔️📜📖💡📚🎤🔊✨🌟😊😂❤️👌🙏]/g,'')
+  .replace(/[ًٌٍَُِّْ]/g,'')
+  .replace(/[؟?]/g,'. ')
+  .trim();
+  let u = new SpeechSynthesisUtterance(clean);
+  let voices = window.speechSynthesis.getVoices().filter(v=>v.lang.startsWith('ar') || v.lang.startsWith('en'));
+  if(currentDialect==='english'){
+    let ev = voices.find(v=>v.lang==='en-US') || voices.find(v=>v.lang.startsWith('en'));
+    if(ev) u.voice=ev; u.lang='en-US';
+  } else {
+    let av = voices.find(v=>v.lang==='ar-SA') || voices.find(v=>v.lang.startsWith('ar'));
+    if(av) u.voice=av; u.lang='ar-SA';
+  }
+  u.rate=1.0;
+  u.pitch=1.0;
+  u.volume=1;
+  window.speechSynthesis.speak(u);
 }
-function playNext(){
-  if(audioQueue.length===0) return;
-  let part=audioQueue.shift();
-  let player=document.getElementById('player');
-  let tl = currentDialect==='english' ? 'en' : 'ar';
-  player.src='https://translate.google.com/translate_tts?ie=UTF-8&tl='+tl+'&client=tw-ob&q='+encodeURIComponent(part);
-  player.play();
-  player.onended=playNext;
-  player.onerror=function(){
-    let u=new SpeechSynthesisUtterance(part);
-    u.lang = tl==='en' ? 'en-US' : 'ar-SA'; u.rate=0.95; u.pitch=0.9;
-    window.speechSynthesis.speak(u); setTimeout(playNext,800);
-  };
-}
-document.getElementById('firstSpeak').addEventListener('click', function(){ speakText('هلا والله يا غالي، ارحب. أنا المهلهل، أتكلم بلهجتك أنت.'); });
+
+document.getElementById('firstSpeak').addEventListener('click', ()=>speakText('هلا والله يا غالي، ارحب، كيف حالك ذلحين؟'));
 document.getElementById('sendBtn').addEventListener('click', send);
 document.getElementById('micBtn').addEventListener('click', startListening);
-document.getElementById('inp').addEventListener('keypress', function(e){ if(e.key==='Enter') send(); });
+document.getElementById('inp').addEventListener('keypress', e=>{ if(e.key==='Enter') send(); });
 
 function startListening(){
   let SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){ alert('افتح الموقع في جوجل كروم'); return; }
+  if(!SR){ alert('افتح في كروم'); return; }
   let rec=new SR(); rec.lang='ar-SA';
-  document.getElementById('status').innerText='🎤 اتكلم ذلحين...';
-  rec.onresult=function(e){
-    let txt=e.results[0][0].transcript;
-    document.getElementById('inp').value=txt;
-    document.getElementById('status').innerText='';
-    send();
-  };
+  document.getElementById('status').innerText='اتكلم ذلحين...';
+  rec.onresult=e=>{ document.getElementById('inp').value=e.results[0][0].transcript; document.getElementById('status').innerText=''; send(); };
   rec.start();
 }
-
 async function send(){
-  let inp=document.getElementById('inp');
-  let txt=inp.value.trim(); if(!txt) return;
-  // كشف اللهجة من كلامك
+  let inp=document.getElementById('inp'); let txt=inp.value.trim(); if(!txt) return;
   currentDialect=detectDialect(txt);
-  let names={sanaani:'صنعاني',taizi:'تعزي',adeni:'عدني',hadrami:'حضرمي',english:'English'};
-  document.getElementById('currentDialect').innerText='🎯 كشفت لهجتك: '+names[currentDialect]+' - برد عليك بنفس اللهجة!';
+  let names={sanaani:'صنعاني',taizi:'تعزي',adeni:'عدني',english:'English'};
+  document.getElementById('currentDialect').innerText='كشفت لهجتك: '+names[currentDialect];
   let chat=document.getElementById('chat');
-  chat.innerHTML+='<div class="msg user">'+txt+'</div>';
-  inp.value=''; history.push(txt);
-  chat.innerHTML+='<div class="msg bot" id="loading">المهلهل يفكر...</div>';
-  chat.scrollTop=chat.scrollHeight;
+  chat.innerHTML+='<div class="msg user">'+txt+'</div>'; inp.value=''; history.push(txt);
+  chat.innerHTML+='<div class="msg bot" id="loading">المهلهل يفكر...</div>'; chat.scrollTop=chat.scrollHeight;
   try{
-    let prompt=getDialectPrompt(currentDialect)+` ممنوع تقول انا ذكاء اصطناعي. تتذكر: ${history.slice(-8).join(' | ')} سؤال المستخدم: ${txt}`;
+    let prompt=getDialectPrompt(currentDialect)+` تتذكر: ${history.slice(-8).join(' | ')} سؤال المستخدم: ${txt}`;
     let res=await fetch('https://text.pollinations.ai/'+encodeURIComponent(prompt)+'?model=openai');
     let data=await res.text();
     let el=document.getElementById('loading'); if(el) el.remove();
     let id='msg'+Date.now();
-    chat.innerHTML+='<div class="msg bot" id="'+id+'">🧔 '+data+'<br><button class="speakBtn">🔊 اسمع صوتي</button></div>';
-    document.getElementById(id).querySelector('.speakBtn').addEventListener('click', function(){ speakText(data); });
+    chat.innerHTML+='<div class="msg bot" id="'+id+'">'+data+'<br><button class="speakBtn">اسمع صوتي</button></div>';
+    document.getElementById(id).querySelector('.speakBtn').addEventListener('click', ()=>speakText(data));
     speakText(data);
-  }catch(e){
-    let el=document.getElementById('loading'); if(el) el.innerText='مشكلة بالنت، حاول مرة ثانية';
-  }
+  }catch(e){ let el=document.getElementById('loading'); if(el) el.innerText='مشكلة بالنت'; }
   chat.scrollTop=chat.scrollHeight;
 }
 </script>
