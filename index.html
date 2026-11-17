@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>المهلهل - يتكلم بلهجتك</title>
+<title>المهلهل - كلام نظيف</title>
 <style>
 body{font-family:system-ui;background:#0f172a;color:#fff;margin:0;padding:10px}
 .header{text-align:center}
@@ -12,7 +12,7 @@ h1{color:#fbbf24;margin:5px 0}
 .dialect{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin:8px 0}
 .dialect button{background:#334155;color:#fff;border:1px solid #fbbf24;border-radius:20px;padding:7px 11px}
 .dialect button.active{background:#fbbf24;color:#000;font-weight:bold}
-#chat{height:46vh;overflow:auto;background:#1e293b;border-radius:15px;padding:12px;margin-bottom:10px}
+#chat{height:50vh;overflow:auto;background:#1e293b;border-radius:15px;padding:12px;margin-bottom:10px}
 .msg{padding:11px;border-radius:12px;margin:8px 0;max-width:90%;line-height:1.8}
 .user{background:#2563eb;margin-right:auto}
 .bot{background:#334155}
@@ -20,19 +20,10 @@ h1{color:#fbbf24;margin:5px 0}
 input{width:56%;padding:13px;border-radius:20px;border:none;color:#000}
 button.send{width:18%;padding:13px;border-radius:20px;border:none;background:#fbbf24;font-weight:bold}
 button.mic{width:18%;padding:13px;border-radius:20px;border:none;background:#dc2626;color:#fff;font-size:18px}
-.speedBox{background:#1e293b;padding:10px;border-radius:12px;text-align:center;margin:8px 0}
-.speedBox input{width:80%}
 </style>
 </head>
 <body>
-<div class="header"><div class="logo">⚔️</div><h1>المهلهل</h1><p>يتكلم بسرعتك انت</p></div>
-<div class="speedBox">
-<b>سرعة الكلام:</b><br>
-<input type="range" id="speedSlider" min="0.5" max="1.0" step="0.05" value="0.78">
-<p id="speedLabel" style="color:#fbbf24;margin:2px">السرعة: 0.78 - هادي مثل صوتك</p>
-<button onclick="testVoice()" style="background:#fbbf24;border:none;padding:7px 14px;border-radius:20px;font-weight:bold;margin-top:5px">🔊 جرب الصوت هنا</button>
-<p id="voiceStatus" style="font-size:12px;color:#fff"></p>
-</div>
+<div class="header"><div class="logo">⚔️</div><h1>المهلهل</h1><p>كلام نظيف، ينطقه صح</p></div>
 <p id="currentDialect" style="text-align:center;color:#fbbf24">اللهجة: تلقائي</p>
 <div class="dialect">
 <button onclick="setDialect('auto',this)" class="active">تلقائي</button>
@@ -48,66 +39,36 @@ button.mic{width:18%;padding:13px;border-radius:20px;border:none;background:#dc2
 <button class="send" id="sendBtn">أرسل</button>
 </div>
 <p id="status" style="text-align:center;color:#fbbf24"></p>
-<audio id="player" style="display:none"></audio>
 <script>
 let history=[]; let manualDialect='auto'; let currentDialect='sanaani';
-let mySpeed=0.78;
 
-document.getElementById('speedSlider').addEventListener('input', function(){
-  mySpeed=parseFloat(this.value);
-  document.getElementById('speedLabel').innerText='السرعة: '+mySpeed;
-});
-
-function testVoice(){
-  document.getElementById('voiceStatus').innerText='جاري تجربة الصوت...';
-  speakTTS('ارحب يا غالي، اش تشتي اليوم؟ هلا والله');
-}
-
-// --- الصوت الأساسي - يشتغل دائما ---
-function speakTTS(text){
-  window.speechSynthesis.cancel();
-  let clean=text.replace(/[🧔⚔️📜📖💡📚🎤🔊✨🌟😊😂❤️👌🙏]/g,'').replace(/[ًٌٍَُِّْ]/g,'').trim();
-  clean = clean.replace(/\. /g,' ، ').replace(/\?/g,' ، ');
-  let u=new SpeechSynthesisUtterance(clean);
-  let voices=window.speechSynthesis.getVoices();
-  if(currentDialect==='english'){ u.lang='en-US'; let v=voices.find(v=>v.lang.startsWith('en')); if(v) u.voice=v; }
-  else { u.lang='ar-SA'; let v=voices.find(v=>v.lang==='ar-SA')||voices.find(v=>v.lang.startsWith('ar')); if(v) u.voice=v; }
-  u.rate=mySpeed;
-  u.pitch=0.85;
-  u.volume=1;
-  u.onstart=function(){ document.getElementById('voiceStatus').innerText='✅ الصوت شغال ذلحين!'; };
-  u.onerror=function(){ document.getElementById('voiceStatus').innerText='❌ السماعة مقفلة، ارفع الصوت من الجوال'; };
-  window.speechSynthesis.speak(u);
-  // اذا بعد ثانيتين ما اشتغل، جرب مرة ثانية
-  setTimeout(function(){
-    if(!window.speechSynthesis.speaking && !window.speechSynthesis.pending){
-      // حاول مرة ثانية
-      window.speechSynthesis.speak(u);
-    }
-  }, 500);
-}
-
-function speakText(text){
-  // جرب صوتك انت، واذا ما اشتغل، تكلم بصوت التلفون على طول، لا تسكت
-  let p=document.getElementById('player');
-  if(text.includes('ارحب')){
-    p.src='myvoice.mp3';
-    p.playbackRate=1.0;
-    let played = p.play();
-    if(played){
-      played.then(function(){
-        document.getElementById('voiceStatus').innerText='شغلت صوتك انت';
-      }).catch(function(){
-        // ملف صوتك مش موجود، تكلم بصوت التلفون
-        speakTTS(text);
-      });
-      p.onerror=function(){ speakTTS(text); };
-      // اذا بعد ثانية ما اشتغل، تكلم بصوت التلفون
-      setTimeout(function(){ if(p.paused && p.currentTime===0){ speakTTS(text); } }, 1000);
-      return;
-    }
-  }
-  speakTTS(text);
+// --- قاموس التنظيف: نمنع الكلمات اللي تخرب الصوت ---
+function fixForSpeech(t){
+  let map={
+    'موجودن':'موجود',
+    'موجودن ':'موجود ',
+    'بلاهي':'بالله',
+    'ولاهي':'والله',
+    'يوه':'نعم',
+    'ايوه':'نعم',
+    'ايوة':'نعم',
+    'خالي معاي':'انا هنا',
+    'خالي':'انا هنا',
+    'معاي':'معي',
+    'يمكنا':'ممكن',
+    'اشتجت':'اش تشتي',
+    'اشتيت':'اش تشتي',
+    'هاكذا':'هكذا',
+    'صدق':'صدقني',
+    'وين انت':'اين انت',
+    'فينك':'اين انت',
+    'ذلحين':'الان',
+    'ارحب ارحب':'ارحب',
+    'هلا هلا':'هلا',
+    'واللهي':'والله'
+  };
+  for(let k in map){ t = t.split(k).join(map[k]); }
+  return t;
 }
 
 function detectDialect(text){
@@ -118,10 +79,15 @@ function detectDialect(text){
   return 'sanaani';
 }
 function getDialectPrompt(d){
-  if(d==='taizi') return `انت المهلهل التعزي، تتكلم تعزي فقط. استخدم: كيفك، اشتي، اش تشتي، موش، وينك، هيا، قلبي. اكتب بدون تشكيل، كلام عادي. ممنوع تقول ايش، قول اش. جمل قصيرة.`;
-  if(d==='adeni') return `انت المهلهل العدني، تتكلم عدني فقط. كلماتك: فين، اشتي، اش تشتي، كود، بغيت، هب، ياخي. اكتب بدون تشكيل.`;
-  if(d==='english') return `You are Al-Muhalhil, Yemeni man. Speak ONLY English, slow, calm, short sentences.`;
-  return `انت المهلهل الصنعاني، تتكلم صنعاني فقط مثل صاحب الصوت. لازم تقول: ارحب يا غالي، اش تشتي اليوم، هلا والله. ممنوع تقول ايش، قول اش. كلماتك: هلا والله، ارحب، يا غالي، اش تشتي، ذلحين. اكتب بدون تشكيل، كلام عادي. ممنوع مصري. جمل قصيرة.`;
+  // نمنع عليه الكلمات اللي تخرب النطق
+  let forbidden = `ممنوع تماما تقول هذه الكلمات لأنها تخرب الصوت: يوه، ايوه، خالي، معاي، بلاهي، ولاهي، موجودن، يمكنا، هاكذا، صدق يوه.
+بدلها قول: نعم، انا هنا، انا موجود، بالله، والله، ممكن، هكذا.
+اكتب بدون تشكيل، كلام نظيف، جمل قصيرة جدا، كل جملة 5 كلمات فقط.`;
+  if(d==='taizi') return `انت المهلهل التعزي. كلماتك المسموحة فقط: كيفك، اش تشتي، انا هنا، انا موجود، نعم، هلا، تمام. ${forbidden}`;
+  if(d==='adeni') return `انت المهلهل العدني. كلماتك المسموحة فقط: فين، اش تشتي، انا هنا، انا موجود، نعم، هلا، تمام. ${forbidden}`;
+  if(d==='english') return `You are Al-Muhalhil, Yemeni man. Speak ONLY English, very short sentences, 5 words max. Use only simple words.`;
+  return `انت المهلهل الصنعاني. كلماتك المسموحة فقط: ارحب، يا غالي، اش تشتي، هلا والله، انا في صنعاء، انا موجود، انا هنا، نعم، تمام، كيف حالك.
+ممنوع تقول ايش، قول اش. ${forbidden}`;
 }
 function setDialect(d,btn){
   manualDialect=d;
@@ -130,6 +96,24 @@ function setDialect(d,btn){
   let names={auto:'تلقائي',sanaani:'صنعاني',taizi:'تعزي',adeni:'عدني',english:'English'};
   document.getElementById('currentDialect').innerText='اللهجة: '+names[d];
 }
+
+function speakText(text){
+  window.speechSynthesis.cancel();
+  // نظف الكلام قبل ما ينطقه
+  let clean = fixForSpeech(text);
+  clean = clean.replace(/[🧔⚔️📜📖💡📚🎤🔊✨🌟😊😂❤️👌🙏]/g,'').replace(/[ًٌٍَُِّْ]/g,'').trim();
+  // اقسم الجمل الطويلة لجمل صغيرة عشان ما يتلخبط
+  clean = clean.replace(/\. /g,'. ');
+  let u=new SpeechSynthesisUtterance(clean);
+  let voices=window.speechSynthesis.getVoices();
+  if(currentDialect==='english'){ u.lang='en-US'; let v=voices.find(v=>v.lang.startsWith('en')); if(v) u.voice=v; }
+  else { u.lang='ar-SA'; let v=voices.find(v=>v.lang==='ar-SA')||voices.find(v=>v.lang.startsWith('ar')); if(v) u.voice=v; }
+  u.rate=0.85; // هادي، مش سريع
+  u.pitch=0.9;
+  u.volume=1;
+  window.speechSynthesis.speak(u);
+}
+
 document.getElementById('firstSpeak').addEventListener('click', ()=>speakText('ارحب يا غالي، اش تشتي اليوم؟ هلا والله.'));
 document.getElementById('sendBtn').addEventListener('click', send);
 document.getElementById('micBtn').addEventListener('click', startListening);
@@ -154,6 +138,8 @@ async function send(){
     let prompt=getDialectPrompt(currentDialect)+` تتذكر: ${history.slice(-8).join(' | ')} سؤال المستخدم: ${txt}`;
     let res=await fetch('https://text.pollinations.ai/'+encodeURIComponent(prompt)+'?model=openai');
     let data=await res.text();
+    // نظف الرد قبل ما نعرضه
+    data = fixForSpeech(data);
     let el=document.getElementById('loading'); if(el) el.remove();
     let id='msg'+Date.now();
     chat.innerHTML+='<div class="msg bot" id="'+id+'">'+data+'<br><button class="speakBtn">اسمع صوتي</button></div>';
@@ -162,9 +148,7 @@ async function send(){
   }catch(e){ let el=document.getElementById('loading'); if(el) el.innerText='مشكلة بالنت'; }
   chat.scrollTop=chat.scrollHeight;
 }
-// حمل الأصوات أول ما يفتح الموقع
 window.speechSynthesis.getVoices();
-if(window.speechSynthesis.onvoiceschanged!==undefined){ window.speechSynthesis.onvoiceschanged=function(){}; }
 </script>
 </body>
 </html>
